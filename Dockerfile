@@ -8,11 +8,11 @@ RUN apt-get update && apt-get install -y curl bzip2
 ENV ANACONDA_ACCEPT_LICENSE="yes"
 
 # Download and install Anaconda with automatic "yes" response
-RUN curl -O https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Linux-x86_64.sh && \
-    bash Anaconda3-2023.09-0-Linux-x86_64.sh -b -p /opt/anaconda3 -u $ANACONDA_ACCEPT_LICENSE
+#RUN curl -O https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Linux-x86_64.sh && \
+#    bash Anaconda3-2023.09-0-Linux-x86_64.sh -b -p /opt/anaconda3 -u $ANACONDA_ACCEPT_LICENSE
 
 # Set the working directory
+RUN mkdir /code
 WORKDIR /code
-ADD . .
 # You can now activate the Conda environment and use it within the container
 # CMD ["conda", "activate", "env36"]
