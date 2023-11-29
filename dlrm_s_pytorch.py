@@ -1388,6 +1388,9 @@ def run():
     total_iter = 0
     total_samp = 0
 
+    current_wall_time_forDuration = 0
+    last_wall_time_forDuration = time.time()
+
     if args.mlperf_logging:
         mlperf_logger.mlperf_submission_log("dlrm")
         mlperf_logger.log_event(
@@ -1649,11 +1652,17 @@ def run():
                             "inference" if args.inference_only else "training"
                         )
 
+                
                         wall_time = ""
+                        wall_time_duration = 0
                         if args.print_wall_time:
-                            #wall_time = " ({})".format(time.strftime("%H:%M:%S"))
+                            #wall_time = " ({})".format(time.strftime("%H:%M"))
                             current_wall_time = time.time()
-                            wall_time = " ({})".format(time.strftime("%H:%M:%S", time.localtime(current_wall_time)) + f".{int((current_wall_time % 1) * 1000):03d}")
+                            wall_time = " ({})".format(time.strftime("%H:%M:%S", time.localtime(
+                                current_wall_time)) + f".{int((current_wall_time % 1) * 1000):03d}")
+                            current_wall_time_forDuration = current_wall_time
+                            wall_time_duration = current_wall_time_forDuration - last_wall_time_forDuration
+                            last_wall_time_forDuration = current_wall_time_forDuration
 
                         print(
                             "Finished {} it {}/{} of epoch {}, {:.2f} ms/it,".format(
@@ -1661,6 +1670,7 @@ def run():
                             )
                             + " loss {:.6f}".format(train_loss)
                             + wall_time,
+                            + "wall time duration {:.3f}".format(wall_time_duration),
                             flush=True,
                         )
 
