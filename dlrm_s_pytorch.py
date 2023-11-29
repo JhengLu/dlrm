@@ -1670,6 +1670,7 @@ def run():
 
                     # testing
                     if should_test:
+                        print("doing the inference")
                         epoch_num_float = (j + 1) / len(train_ld) + k + 1
                         if args.mlperf_logging:
                             mlperf_logger.barrier()
