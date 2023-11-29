@@ -30,9 +30,6 @@ RUN conda install -c conda-forge -y onnx
 RUN pip install tqdm tensorboard future pydot
 RUN pip3 install -U scikit-learn scipy matplotlib
 
-# Deactivate Conda environment to avoid issues in later steps
-SHELL ["/bin/bash", "-c"]
-RUN conda deactivate
 
 # Install other system dependencies
 RUN apt-get update && apt-get install -y git graphviz numactl wget vim unzip
