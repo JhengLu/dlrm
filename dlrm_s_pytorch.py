@@ -1651,7 +1651,7 @@ def run():
 
                         wall_time = ""
                         if args.print_wall_time:
-                            wall_time = " ({})".format(time.strftime("%H:%M"))
+                            wall_time = " ({})".format(time.strftime("%H:%M:%S"))
 
                         print(
                             "Finished {} it {}/{} of epoch {}, {:.2f} ms/it,".format(
