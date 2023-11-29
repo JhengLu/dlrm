@@ -14,19 +14,15 @@ RUN curl -O https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Linux-x86_64.s
 # Add Conda binary directory to PATH
 ENV PATH="/opt/anaconda3/bin:${PATH}"
 
-# Create Conda environment
+# Create and activate Conda environment
 RUN conda create -y --name env36 python=3.6
-
-# Activate Conda environment
-SHELL ["conda", "run", "-n", "env36", "/bin/bash", "-c"]
+RUN echo "source activate env36" > ~/.bashrc
+ENV PATH="/opt/anaconda3/envs/env36/bin:${PATH}"
+RUN /bin/bash -c "source activate env36"
 
 # Install required packages in the Conda environment
 RUN conda install -y pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 RUN conda install -c conda-forge -y onnx
-
-# Deactivate Conda environment to avoid issues in later steps
-SHELL ["/bin/bash", "-c"]
-RUN conda deactivate
 
 # Install additional Python packages
 RUN pip install tqdm tensorboard future pydot
