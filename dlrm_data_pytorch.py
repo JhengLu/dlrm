@@ -755,7 +755,7 @@ def make_random_data_and_loader(
         shuffle=False,
         num_workers=args.num_workers,
         collate_fn=collate_wrapper_random,
-        pin_memory=False,
+        pin_memory=True,
         drop_last=False,  # True
     )
 
