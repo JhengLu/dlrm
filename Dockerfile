@@ -1,6 +1,11 @@
 # Set the base image to a suitable Linux distribution
 FROM ubuntu:20.04
 
+
+# Set noninteractive mode and set the timezone to America/Detroit
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Detroit
+
 # Install required dependencies
 RUN apt-get update && apt-get install -y curl bzip2
 
