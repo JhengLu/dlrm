@@ -1669,8 +1669,8 @@ def run():
                                 str_run_type, j + 1, nbatches, k, gT
                             )
                             + " loss {:.6f}".format(train_loss)
-                            + wall_time,
-                            + "wall time duration {:.3f}".format(wall_time_duration),
+                            + wall_time
+                            + ", wall time duration {:.3f}".format(wall_time_duration),
                             flush=True,
                         )
 
