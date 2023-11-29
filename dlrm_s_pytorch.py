@@ -1670,7 +1670,7 @@ def run():
                             )
                             + " loss {:.6f}".format(train_loss)
                             + wall_time
-                            + ", wall time duration {:.3f}".format(wall_time_duration),
+                            + ", wall time duration {:.3f} s".format(wall_time_duration),
                             flush=True,
                         )
 
