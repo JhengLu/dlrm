@@ -659,8 +659,22 @@ def main(argv: List[str]) -> None:
         # https://pytorch.org/torchrec/torchrec.distributed.planner.html#torchrec.distributed.planner.storage_reservations.HeuristicalStorageReservation
         storage_reservation=HeuristicalStorageReservation(percentage=0.5),
     )
+    constraints = {
+        "large_table": ParameterConstraints(
+            sharding_types=["table_wise"],
+            compute_kernels=[EmbeddingComputeKernel.BATCHED_FUSED_UVM.value],
+        ),
+        "medium_table": ParameterConstraints(
+            sharding_types=["table_wise"],
+            compute_kernels=[EmbeddingComputeKernel.BATCHED_FUSED_UVM.value],
+        ),
+        "small_table": ParameterConstraints(
+            sharding_types=["table_wise"],
+            compute_kernels=[EmbeddingComputeKernel.BATCHED_FUSED_UVM.value],
+        )
+    }
     plan = planner.collective_plan(
-        train_model, get_default_sharders(), dist.GroupMember.WORLD
+        train_model, get_default_sharders(), dist.GroupMember.WORLD, constraints=constraints
     )
 
     model = DistributedModelParallel(
