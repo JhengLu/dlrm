@@ -665,15 +665,15 @@ def main(argv: List[str]) -> None:
     constraints = {
         "large_table": ParameterConstraints(
             sharding_types=["table_wise"],
-            compute_kernels=[EmbeddingComputeKernel.BATCHED_FUSED_UVM.value],
+            compute_kernels=[EmbeddingComputeKernel.FUSED_UVM.value],
         ),
         "medium_table": ParameterConstraints(
             sharding_types=["table_wise"],
-            compute_kernels=[EmbeddingComputeKernel.BATCHED_FUSED_UVM.value],
+            compute_kernels=[EmbeddingComputeKernel.FUSED_UVM.value],
         ),
         "small_table": ParameterConstraints(
             sharding_types=["table_wise"],
-            compute_kernels=[EmbeddingComputeKernel.BATCHED_FUSED_UVM.value],
+            compute_kernels=[EmbeddingComputeKernel.FUSED_UVM.value],
         )
     }
     # Add by myself
