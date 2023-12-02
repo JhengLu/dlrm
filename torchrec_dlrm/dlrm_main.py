@@ -657,7 +657,7 @@ def main(argv: List[str]) -> None:
         batch_size=args.batch_size,
         # If experience OOM, increase the percentage. see
         # https://pytorch.org/torchrec/torchrec.distributed.planner.html#torchrec.distributed.planner.storage_reservations.HeuristicalStorageReservation
-        storage_reservation=HeuristicalStorageReservation(percentage=0.05),
+        storage_reservation=HeuristicalStorageReservation(percentage=0.5),
     )
     plan = planner.collective_plan(
         train_model, get_default_sharders(), dist.GroupMember.WORLD
