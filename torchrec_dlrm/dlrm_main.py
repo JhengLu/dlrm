@@ -25,6 +25,7 @@ from torchrec.distributed.model_parallel import (
     DistributedModelParallel,
     get_default_sharders,
 )
+from torchrec.distributed.planner.types import ParameterConstraints
 from torchrec.distributed.planner import EmbeddingShardingPlanner, Topology
 from torchrec.distributed.planner.storage_reservations import (
     HeuristicalStorageReservation,
@@ -659,6 +660,7 @@ def main(argv: List[str]) -> None:
         # https://pytorch.org/torchrec/torchrec.distributed.planner.html#torchrec.distributed.planner.storage_reservations.HeuristicalStorageReservation
         storage_reservation=HeuristicalStorageReservation(percentage=0.5),
     )
+    # Add by myself
     constraints = {
         "large_table": ParameterConstraints(
             sharding_types=["table_wise"],
@@ -673,6 +675,7 @@ def main(argv: List[str]) -> None:
             compute_kernels=[EmbeddingComputeKernel.BATCHED_FUSED_UVM.value],
         )
     }
+    # Add by myself
     plan = planner.collective_plan(
         train_model, get_default_sharders(), dist.GroupMember.WORLD, constraints=constraints
     )
