@@ -26,6 +26,7 @@ from torchrec.distributed.model_parallel import (
     get_default_sharders,
 )
 from torchrec.distributed.planner.types import ParameterConstraints
+from torchrec.distributed.embedding_types import EmbeddingComputeKernel
 from torchrec.distributed.planner import EmbeddingShardingPlanner, Topology
 from torchrec.distributed.planner.storage_reservations import (
     HeuristicalStorageReservation,
