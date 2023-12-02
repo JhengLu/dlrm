@@ -650,17 +650,6 @@ def main(argv: List[str]) -> None:
         train_model.model.sparse_arch.parameters(),
         optimizer_kwargs,
     )
-    planner = EmbeddingShardingPlanner(
-        topology=Topology(
-            local_world_size=get_local_size(),
-            world_size=dist.get_world_size(),
-            compute_device=device.type,
-        ),
-        batch_size=args.batch_size,
-        # If experience OOM, increase the percentage. see
-        # https://pytorch.org/torchrec/torchrec.distributed.planner.html#torchrec.distributed.planner.storage_reservations.HeuristicalStorageReservation
-        storage_reservation=HeuristicalStorageReservation(percentage=0.5),
-    )
     # Add by myself
     constraints = {
         "large_table": ParameterConstraints(
@@ -677,8 +666,22 @@ def main(argv: List[str]) -> None:
         )
     }
     # Add by myself
+    
+    planner = EmbeddingShardingPlanner(
+        topology=Topology(
+            local_world_size=get_local_size(),
+            world_size=dist.get_world_size(),
+            compute_device=device.type,
+        ),
+        batch_size=args.batch_size,
+        # If experience OOM, increase the percentage. see
+        # https://pytorch.org/torchrec/torchrec.distributed.planner.html#torchrec.distributed.planner.storage_reservations.HeuristicalStorageReservation
+        storage_reservation=HeuristicalStorageReservation(percentage=0.5),
+        constraints = constraints,
+    )
+    
     plan = planner.collective_plan(
-        train_model, get_default_sharders(), dist.GroupMember.WORLD, constraints=constraints
+        train_model, get_default_sharders(), dist.GroupMember.WORLD
     )
 
     model = DistributedModelParallel(
