@@ -18,6 +18,7 @@ from pyre_extensions import none_throws
 from torch import distributed as dist
 from torch.utils.data import DataLoader
 from torchrec import EmbeddingBagCollection
+from torchrec.modules.fused_embedding_modules import FusedEmbeddingBagCollection
 from torchrec.datasets.criteo import DEFAULT_CAT_NAMES, DEFAULT_INT_NAMES
 from torchrec.distributed import TrainPipelineSparseDist
 from torchrec.distributed.comm import get_local_size
@@ -596,7 +597,7 @@ def main(argv: List[str]) -> None:
 
     if args.interaction_type == InteractionType.ORIGINAL:
         dlrm_model = DLRM(
-            embedding_bag_collection=EmbeddingBagCollection(
+            embedding_bag_collection=FusedEmbeddingBagCollection(
                 tables=eb_configs, device=torch.device("meta")
             ),
             dense_in_features=len(DEFAULT_INT_NAMES),
@@ -606,7 +607,7 @@ def main(argv: List[str]) -> None:
         )
     elif args.interaction_type == InteractionType.DCN:
         dlrm_model = DLRM_DCN(
-            embedding_bag_collection=EmbeddingBagCollection(
+            embedding_bag_collection=FusedEmbeddingBagCollection(
                 tables=eb_configs, device=torch.device("meta")
             ),
             dense_in_features=len(DEFAULT_INT_NAMES),
@@ -618,7 +619,7 @@ def main(argv: List[str]) -> None:
         )
     elif args.interaction_type == InteractionType.PROJECTION:
         dlrm_model = DLRM_Projection(
-            embedding_bag_collection=EmbeddingBagCollection(
+            embedding_bag_collection=FusedEmbeddingBagCollection(
                 tables=eb_configs, device=torch.device("meta")
             ),
             dense_in_features=len(DEFAULT_INT_NAMES),
