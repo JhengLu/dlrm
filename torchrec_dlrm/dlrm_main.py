@@ -608,7 +608,7 @@ def main(argv: List[str]) -> None:
     elif args.interaction_type == InteractionType.DCN:
         dlrm_model = DLRM_DCN(
             embedding_bag_collection=FusedEmbeddingBagCollection(
-                tables=eb_configs, device=torch.device("meta")
+                tables=eb_configs, device=torch.device("meta"),optimizer_type=torch.optim.Adagrad if args.adagrad else torch.optim.SGD, optimizer_kwargs={"lr": args.learning_rate}
             ),
             dense_in_features=len(DEFAULT_INT_NAMES),
             dense_arch_layer_sizes=args.dense_arch_layer_sizes,
@@ -620,7 +620,7 @@ def main(argv: List[str]) -> None:
     elif args.interaction_type == InteractionType.PROJECTION:
         dlrm_model = DLRM_Projection(
             embedding_bag_collection=FusedEmbeddingBagCollection(
-                tables=eb_configs, device=torch.device("meta")
+                tables=eb_configs, device=torch.device("meta"), optimizer_type=torch.optim.Adagrad if args.adagrad else torch.optim.SGD, optimizer_kwargs={"lr": args.learning_rate}
             ),
             dense_in_features=len(DEFAULT_INT_NAMES),
             dense_arch_layer_sizes=args.dense_arch_layer_sizes,
