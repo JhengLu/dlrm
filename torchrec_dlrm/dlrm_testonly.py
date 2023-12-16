@@ -499,6 +499,12 @@ def train_val_test(
     test_auroc = _evaluate(args.limit_test_batches, pipeline, test_dataloader, "test")
     results.test_auroc = test_auroc
 
+    # Save the model after training
+    if dist.get_rank() == 0:  # Check if it's the rank 0 process
+        save_path = "mkdir/crkModel.pt"  # Update this path as needed
+        torch.save(model.state_dict(), save_path)
+        print(f"Model saved to {save_path}")
+
     return results
 
 
