@@ -501,7 +501,7 @@ def train_val_test(
 
     # Save the model after training and test
     if dist.get_rank() == 0:  # Check if it's the rank 0 process
-        save_path = "model/crkModel.pt"  # Update this path as needed
+        save_path = "model/crkModel_big.pt"  # Update this path as needed
         torch.save(model.state_dict(), save_path)
         print(f"Model saved to {save_path}")
 
