@@ -1,4 +1,10 @@
-# ... [Keep all the existing imports and initial code]
+#!/usr/bin/env python3
+# ... [rest of the header comments]
+
+# [all the import statements and class definitions remain the same]
+
+# [parse_args and other function definitions remain the same]
+
 import argparse
 import itertools
 import os
@@ -34,8 +40,7 @@ from torchrec.optim.keyed import CombinedOptimizer, KeyedOptimizerWrapper
 from torchrec.optim.optimizers import in_backward_optimizer_filter
 from tqdm import tqdm
 
-
-
+# OSS import
 try:
     # pyre-ignore[21]
     # @manual=//ai_codesign/benchmarks/dlrm/torchrec_dlrm/data:dlrm_dataloader
@@ -368,6 +373,79 @@ def batched(it: Iterator, n: int):
     assert n >= 1
     for x in it:
         yield itertools.chain((x,), itertools.islice(it, n - 1))
+
+
+def _train(
+    pipeline: TrainPipelineSparseDist,
+    train_dataloader: DataLoader,
+    val_dataloader: DataLoader,
+    epoch: int,
+    lr_scheduler,
+    print_lr: bool,
+    validation_freq: Optional[int],
+    limit_train_batches: Optional[int],
+    limit_val_batches: Optional[int],
+) -> None:
+    """
+    Trains model for 1 epoch. Helper function for train_val_test.
+
+    Args:
+        pipeline (TrainPipelineSparseDist): data pipeline.
+        train_dataloader (DataLoader): Training set's dataloader.
+        val_dataloader (DataLoader): Validation set's dataloader.
+        epoch (int): The number of complete passes through the training set so far.
+        lr_scheduler (LRPolicyScheduler): Learning rate scheduler.
+        print_lr (bool): Whether to print the learning rate every training step.
+        validation_freq (Optional[int]): The number of training steps between validation runs within an epoch.
+        limit_train_batches (Optional[int]): Limits the training set to the first `limit_train_batches` batches.
+        limit_val_batches (Optional[int]): Limits the validation set to the first `limit_val_batches` batches.
+
+    Returns:
+        None.
+    """
+    pipeline._model.train()
+
+    iterator = itertools.islice(iter(train_dataloader), limit_train_batches)
+
+    is_rank_zero = dist.get_rank() == 0
+    if is_rank_zero:
+        pbar = tqdm(
+            iter(int, 1),
+            desc=f"Epoch {epoch}",
+            total=len(train_dataloader),
+            disable=False,
+        )
+
+    start_it = 0
+    n = (
+        validation_freq
+        if validation_freq
+        else limit_train_batches
+        if limit_train_batches
+        else len(train_dataloader)
+    )
+    for batched_iterator in batched(iterator, n):
+        for it in itertools.count(start_it):
+            try:
+                if is_rank_zero and print_lr:
+                    for i, g in enumerate(pipeline._optimizer.param_groups):
+                        print(f"lr: {it} {i} {g['lr']:.6f}")
+                pipeline.progress(batched_iterator)
+                lr_scheduler.step()
+                if is_rank_zero:
+                    pbar.update(1)
+            except StopIteration:
+                if is_rank_zero:
+                    print("Total number of iterations:", it)
+                start_it = it
+                break
+
+        if validation_freq and start_it % validation_freq == 0:
+            _evaluate(limit_val_batches, pipeline, val_dataloader, "val")
+            pipeline._model.train()
+
+
+@dataclass
 class TrainValTestResults:
     val_aurocs: List[float] = field(default_factory=list)
     test_auroc: Optional[float] = None
@@ -430,29 +508,14 @@ def train_val_test(
 
     return results
 
-# Define a function specifically for testing
-def test_only(
-    args: argparse.Namespace,
-    model: torch.nn.Module,
-    device: torch.device,
-    test_dataloader: DataLoader,
-) -> float:
-    """
-    Test loop.
-    """
-    pipeline = TrainPipelineSparseDist(
-        model, None, device, execute_all_batches=True
-    )
 
-    test_auroc = _evaluate(args.limit_test_batches, pipeline, test_dataloader, "test")
-    print(f"Test AUROC: {test_auroc}")
-
-    return test_auroc
 
 def main(argv: List[str]) -> None:
     """
-    Main function to handle testing only.
+    [The existing docstring, with modifications to reflect that only testing is performed]
     """
+    args = parse_args(argv)
+    # ... [rest of argument processing code]
     args = parse_args(argv)
     for name, val in vars(args).items():
         try:
@@ -464,21 +527,21 @@ def main(argv: List[str]) -> None:
 
     if args.multi_hot_sizes is not None:
         assert (
-            args.num_embeddings_per_feature is not None
-            and len(args.multi_hot_sizes) == len(args.num_embeddings_per_feature)
-            or args.num_embeddings_per_feature is None
-            and len(args.multi_hot_sizes) == len(DEFAULT_CAT_NAMES)
+                args.num_embeddings_per_feature is not None
+                and len(args.multi_hot_sizes) == len(args.num_embeddings_per_feature)
+                or args.num_embeddings_per_feature is None
+                and len(args.multi_hot_sizes) == len(DEFAULT_CAT_NAMES)
         ), "--multi_hot_sizes must be a comma delimited list the same size as the number of embedding tables."
     assert (
-        args.in_memory_binary_criteo_path is None
-        or args.synthetic_multi_hot_criteo_path is None
+            args.in_memory_binary_criteo_path is None
+            or args.synthetic_multi_hot_criteo_path is None
     ), "--in_memory_binary_criteo_path and --synthetic_multi_hot_criteo_path are mutually exclusive CLI arguments."
     assert (
-        args.multi_hot_sizes is None or args.synthetic_multi_hot_criteo_path is None
+            args.multi_hot_sizes is None or args.synthetic_multi_hot_criteo_path is None
     ), "--multi_hot_sizes is used to convert 1-hot to multi-hot. It's inapplicable with --synthetic_multi_hot_criteo_path."
     assert (
-        args.multi_hot_distribution_type is None
-        or args.synthetic_multi_hot_criteo_path is None
+            args.multi_hot_distribution_type is None
+            or args.synthetic_multi_hot_criteo_path is None
     ), "--multi_hot_distribution_type is used to convert 1-hot to multi-hot. It's inapplicable with --synthetic_multi_hot_criteo_path."
 
     rank = int(os.environ["LOCAL_RANK"])
@@ -490,6 +553,15 @@ def main(argv: List[str]) -> None:
         device: torch.device = torch.device("cpu")
         backend = "gloo"
 
+    # Initialize device and distributed processing
+    # ... [existing initialization code]
+
+    # Load the dataset
+    train_dataloader = get_dataloader(args, backend, "train")
+    val_dataloader = get_dataloader(args, backend, "val")
+    test_dataloader = get_dataloader(args, backend, "test")
+
+    # ... [rest of model configuration and planning code]
     if rank == 0:
         print(
             "PARAMS: (lr, batch_size, warmup_steps, decay_start, decay_steps): "
@@ -500,39 +572,25 @@ def main(argv: List[str]) -> None:
     if args.num_embeddings_per_feature is not None:
         args.num_embeddings = None
 
-    # Sets default limits for random dataloader iterations when left unspecified.
-    if (
-        args.in_memory_binary_criteo_path
-        is args.synthetic_multi_hot_criteo_path
-        is None
-    ):
-        for split in ["train", "val", "test"]:
-            attr = f"limit_{split}_batches"
-            if getattr(args, attr) is None:
-                setattr(args, attr, 10)
-
-    test_dataloader = get_dataloader(args, backend, "test")
-
-    # Load the model
-    model_path = "model/crkModel.pt"
-    if os.path.exists(model_path):
-        state_dict = torch.load(model_path, map_location=device)
-        # Initialize your model here (e.g., DLRM) and load the state_dict
-        dlrm_model = DLRM(...)  # Replace with actual model initialization
-        dlrm_model.load_state_dict(state_dict)
-        model = DistributedModelParallel(
-            module=dlrm_model,
-            device=device,
-            plan=None,  # Assuming no sharding plan is needed for testing only
-        )
-        test_only(args, model, device, test_dataloader)
+    # Load the pre-trained model
+    model_file = "model/crkModel_big.pt"  # Path to the pre-trained model
+    if os.path.exists(model_file):
+        model.load_state_dict(torch.load(model_file, map_location=device))
+        print(f"Loaded model from {model_file}")
     else:
-        print(f"Model file not found at {model_path}")
+        raise FileNotFoundError(f"Model file {model_file} not found.")
+
+    # Setup optimizer and lr_scheduler
+    # ... [existing optimizer and lr_scheduler setup code]
+
+    # Perform the test
+    test_auroc = _evaluate(args.limit_test_batches, pipeline, test_dataloader, "test")
+    print(f"Test AUROC: {test_auroc}")
+
+    # if args.collect_multi_hot_freqs_stats:
+        # ... [existing code for handling multi_hot_freqs_stats]
 
 def invoke_main() -> None:
-    """
-    Entry point for the script.
-    """
     main(sys.argv[1:])
 
 if __name__ == "__main__":
