@@ -501,7 +501,7 @@ def train_val_test(
 
     # Save the model after training and test
     if dist.get_rank() == 0:  # Check if it's the rank 0 process
-        save_path = "model/crkModel.pt"  # Update this path as needed
+        save_path = "model/crkModel_big.pt"  # Update this path as needed
         torch.save(model.state_dict(), save_path)
         print(f"Model saved to {save_path}")
 
@@ -683,7 +683,7 @@ def main(argv: List[str]) -> None:
         batch_size=args.batch_size,
         # If experience OOM, increase the percentage. see
         # https://pytorch.org/torchrec/torchrec.distributed.planner.html#torchrec.distributed.planner.storage_reservations.HeuristicalStorageReservation
-        storage_reservation=HeuristicalStorageReservation(percentage=0.45),
+        storage_reservation=HeuristicalStorageReservation(percentage=0.5),
         constraints = constraints,
     )
     
