@@ -619,16 +619,7 @@ def main(argv: List[str]) -> None:
     val_dataloader = get_dataloader(args, backend, "val")
     test_dataloader = get_dataloader(args, backend, "test")
 
-    # ... [rest of model configuration and planning code]
-    if rank == 0:
-        print(
-            "PARAMS: (lr, batch_size, warmup_steps, decay_start, decay_steps): "
-            f"{(args.learning_rate, args.batch_size, args.lr_warmup_steps, args.lr_decay_start, args.lr_decay_steps)}"
-        )
-    dist.init_process_group(backend=backend)
 
-    if args.num_embeddings_per_feature is not None:
-        args.num_embeddings = None
 
     # Load the pre-trained model
     model_file = "model/crkModel_big.pt"  # Path to the pre-trained model
