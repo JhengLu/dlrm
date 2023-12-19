@@ -593,6 +593,26 @@ def main(argv: List[str]) -> None:
 
     # Initialize device and distributed processing
     # ... [existing initialization code]
+    if rank == 0:
+        print(
+            "PARAMS: (lr, batch_size, warmup_steps, decay_start, decay_steps): "
+            f"{(args.learning_rate, args.batch_size, args.lr_warmup_steps, args.lr_decay_start, args.lr_decay_steps)}"
+        )
+    dist.init_process_group(backend=backend)
+
+    if args.num_embeddings_per_feature is not None:
+        args.num_embeddings = None
+
+    # Sets default limits for random dataloader iterations when left unspecified.
+    if (
+        args.in_memory_binary_criteo_path
+        is args.synthetic_multi_hot_criteo_path
+        is None
+    ):
+        for split in ["train", "val", "test"]:
+            attr = f"limit_{split}_batches"
+            if getattr(args, attr) is None:
+                setattr(args, attr, 10)
 
     # Load the dataset
     train_dataloader = get_dataloader(args, backend, "train")
