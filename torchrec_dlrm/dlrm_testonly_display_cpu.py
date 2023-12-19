@@ -585,7 +585,7 @@ def main(argv: List[str]) -> None:
     rank = int(os.environ["LOCAL_RANK"])
 
     device: torch.device = torch.device("cpu")
-    backend = "nccl"
+    backend = "gloo"
 
     # Initialize device and distributed processing
     # ... [existing initialization code]
