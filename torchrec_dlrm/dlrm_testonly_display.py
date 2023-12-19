@@ -634,7 +634,7 @@ def main(argv: List[str]) -> None:
         )
         for feature_idx, feature_name in enumerate(DEFAULT_CAT_NAMES)
     ]
-    model = DLRM(
+    dlrm_model = DLRM(
         embedding_bag_collection=FusedEmbeddingBagCollection(
             tables=eb_configs, device=torch.device("meta"),
             optimizer_type=torch.optim.Adagrad if args.adagrad else torch.optim.SGD,
@@ -645,14 +645,73 @@ def main(argv: List[str]) -> None:
         over_arch_layer_sizes=args.over_arch_layer_sizes,
         dense_device=device,
     )
-    if os.path.exists(model_file):
-        model.load_state_dict(torch.load(model_file, map_location=device))
-        print(f"Loaded model from {model_file}")
-    else:
-        raise FileNotFoundError(f"Model file {model_file} not found.")
+
 
     # Setup optimizer and lr_scheduler
     # ... [existing optimizer and lr_scheduler setup code]
+    train_model = DLRMTrain(dlrm_model)
+    embedding_optimizer = torch.optim.Adagrad if args.adagrad else torch.optim.SGD
+    # This will apply the Adagrad optimizer in the backward pass for the embeddings (sparse_arch). This means that
+    # the optimizer update will be applied in the backward pass, in this case through a fused op.
+    # TorchRec will use the FBGEMM implementation of EXACT_ADAGRAD. For GPU devices, a fused CUDA kernel is invoked. For CPU, FBGEMM_GPU invokes CPU kernels
+    # https://github.com/pytorch/FBGEMM/blob/2cb8b0dff3e67f9a009c4299defbd6b99cc12b8f/fbgemm_gpu/fbgemm_gpu/split_table_batched_embeddings_ops.py#L676-L678
+
+    # Note that lr_decay, weight_decay and initial_accumulator_value for Adagrad optimizer in FBGEMM v0.3.2
+    # cannot be specified below. This equivalently means that all these parameters are hardcoded to zero.
+
+    optimizer_kwargs = {"lr": args.learning_rate}
+    if args.adagrad:
+        optimizer_kwargs["eps"] = args.eps
+    apply_optimizer_in_backward(
+        embedding_optimizer,
+        train_model.model.sparse_arch.parameters(),
+        optimizer_kwargs,
+    )
+    # Add by myself
+    constraints = {
+        "large_table": ParameterConstraints(
+            sharding_types=["table_wise"],
+            compute_kernels=[EmbeddingComputeKernel.FUSED_UVM.value],
+        ),
+        "medium_table": ParameterConstraints(
+            sharding_types=["table_wise"],
+            compute_kernels=[EmbeddingComputeKernel.FUSED_UVM.value],
+        ),
+        "small_table": ParameterConstraints(
+            sharding_types=["table_wise"],
+            compute_kernels=[EmbeddingComputeKernel.FUSED_UVM.value],
+        )
+    }
+    # Add by myself
+
+    planner = EmbeddingShardingPlanner(
+        topology=Topology(
+            local_world_size=get_local_size(),
+            world_size=dist.get_world_size(),
+            compute_device=device.type,
+        ),
+        batch_size=args.batch_size,
+        # If experience OOM, increase the percentage. see
+        # https://pytorch.org/torchrec/torchrec.distributed.planner.html#torchrec.distributed.planner.storage_reservations.HeuristicalStorageReservation
+        storage_reservation=HeuristicalStorageReservation(percentage=0.5),
+        constraints=constraints,
+    )
+
+    plan = planner.collective_plan(
+        train_model, get_default_sharders(), dist.GroupMember.WORLD
+    )
+
+    model = DistributedModelParallel(
+        module=train_model,
+        device=device,
+        plan=plan,
+    )
+    if rank == 0 and args.print_sharding_plan:
+        for collectionkey, plans in model._plan.plan.items():
+            print(collectionkey)
+            for table_name, plan in plans.items():
+                print(table_name, "\n", plan, "\n")
+
     def optimizer_with_params():
         if args.adagrad:
             return lambda params: torch.optim.Adagrad(
@@ -669,6 +728,12 @@ def main(argv: List[str]) -> None:
     lr_scheduler = LRPolicyScheduler(
         optimizer, args.lr_warmup_steps, args.lr_decay_start, args.lr_decay_steps
     )
+
+    if os.path.exists(model_file):
+        model.load_state_dict(torch.load(model_file, map_location=device))
+        print(f"Loaded model from {model_file}")
+    else:
+        raise FileNotFoundError(f"Model file {model_file} not found.")
 
 
     train_val_test(
