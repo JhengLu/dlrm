@@ -632,7 +632,7 @@ def main(argv: List[str]) -> None:
     ]
     dlrm_model = DLRM(
         embedding_bag_collection=FusedEmbeddingBagCollection(
-            tables=eb_configs, device=torch.device("meta"),
+            tables=eb_configs, device=torch.device("cpu"),
             optimizer_type=torch.optim.Adagrad if args.adagrad else torch.optim.SGD,
             optimizer_kwargs={"lr": args.learning_rate}
         ),
