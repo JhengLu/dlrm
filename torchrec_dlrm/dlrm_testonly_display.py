@@ -736,7 +736,7 @@ def main(argv: List[str]) -> None:
         raise FileNotFoundError(f"Model file {model_file} not found.")
 
 
-    train_val_test(
+    test_only(
         args,
         model,
         optimizer,
