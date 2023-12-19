@@ -508,6 +508,44 @@ def train_val_test(
 
     return results
 
+def test_only(
+    args: argparse.Namespace,
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    device: torch.device,
+    train_dataloader: DataLoader,
+    val_dataloader: DataLoader,
+    test_dataloader: DataLoader,
+    lr_scheduler: LRPolicyScheduler,
+) -> TrainValTestResults:
+    """
+    Train/validation/test loop.
+
+    Args:
+        args (argparse.Namespace): parsed command line args.
+        model (torch.nn.Module): model to train.
+        optimizer (torch.optim.Optimizer): optimizer to use.
+        device (torch.device): device to use.
+        train_dataloader (DataLoader): Training set's dataloader.
+        val_dataloader (DataLoader): Validation set's dataloader.
+        test_dataloader (DataLoader): Test set's dataloader.
+        lr_scheduler (LRPolicyScheduler): Learning rate scheduler.
+
+    Returns:
+        TrainValTestResults.
+    """
+    results = TrainValTestResults()
+    pipeline = TrainPipelineSparseDist(
+        model, optimizer, device, execute_all_batches=True
+    )
+
+
+    test_auroc = _evaluate(args.limit_test_batches, pipeline, test_dataloader, "test")
+    results.test_auroc = test_auroc
+
+
+    return results
+
 
 
 def main(argv: List[str]) -> None:
@@ -574,6 +612,28 @@ def main(argv: List[str]) -> None:
 
     # Load the pre-trained model
     model_file = "model/crkModel_big.pt"  # Path to the pre-trained model
+    eb_configs = [
+        EmbeddingBagConfig(
+            name=f"t_{feature_name}",
+            embedding_dim=args.embedding_dim,
+            num_embeddings=none_throws(args.num_embeddings_per_feature)[feature_idx]
+            if args.num_embeddings is None
+            else args.num_embeddings,
+            feature_names=[feature_name],
+        )
+        for feature_idx, feature_name in enumerate(DEFAULT_CAT_NAMES)
+    ]
+    model = DLRM(
+        embedding_bag_collection=FusedEmbeddingBagCollection(
+            tables=eb_configs, device=torch.device("meta"),
+            optimizer_type=torch.optim.Adagrad if args.adagrad else torch.optim.SGD,
+            optimizer_kwargs={"lr": args.learning_rate}
+        ),
+        dense_in_features=len(DEFAULT_INT_NAMES),
+        dense_arch_layer_sizes=args.dense_arch_layer_sizes,
+        over_arch_layer_sizes=args.over_arch_layer_sizes,
+        dense_device=device,
+    )
     if os.path.exists(model_file):
         model.load_state_dict(torch.load(model_file, map_location=device))
         print(f"Loaded model from {model_file}")
@@ -582,10 +642,34 @@ def main(argv: List[str]) -> None:
 
     # Setup optimizer and lr_scheduler
     # ... [existing optimizer and lr_scheduler setup code]
+    def optimizer_with_params():
+        if args.adagrad:
+            return lambda params: torch.optim.Adagrad(
+                params, lr=args.learning_rate, eps=args.eps
+            )
+        else:
+            return lambda params: torch.optim.SGD(params, lr=args.learning_rate)
 
-    # Perform the test
-    test_auroc = _evaluate(args.limit_test_batches, pipeline, test_dataloader, "test")
-    print(f"Test AUROC: {test_auroc}")
+    dense_optimizer = KeyedOptimizerWrapper(
+        dict(in_backward_optimizer_filter(model.named_parameters())),
+        optimizer_with_params(),
+    )
+    optimizer = CombinedOptimizer([model.fused_optimizer, dense_optimizer])
+    lr_scheduler = LRPolicyScheduler(
+        optimizer, args.lr_warmup_steps, args.lr_decay_start, args.lr_decay_steps
+    )
+
+
+    train_val_test(
+        args,
+        model,
+        optimizer,
+        device,
+        train_dataloader,
+        val_dataloader,
+        test_dataloader,
+        lr_scheduler,
+    )
 
     # if args.collect_multi_hot_freqs_stats:
         # ... [existing code for handling multi_hot_freqs_stats]
