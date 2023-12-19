@@ -583,13 +583,9 @@ def main(argv: List[str]) -> None:
     ), "--multi_hot_distribution_type is used to convert 1-hot to multi-hot. It's inapplicable with --synthetic_multi_hot_criteo_path."
 
     rank = int(os.environ["LOCAL_RANK"])
-    if torch.cuda.is_available():
-        device: torch.device = torch.device(f"cuda:{rank}")
-        backend = "nccl"
-        torch.cuda.set_device(device)
-    else:
-        device: torch.device = torch.device("cpu")
-        backend = "gloo"
+
+    device: torch.device = torch.device("cpu")
+    backend = "gloo"
 
     # Initialize device and distributed processing
     # ... [existing initialization code]
