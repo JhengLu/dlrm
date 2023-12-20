@@ -729,7 +729,7 @@ def main(argv: List[str]) -> None:
     )
 
     if os.path.exists(model_file):
-        model.load_state_dict(torch.load(model_file, map_location=torch.device('cpu')))
+        model.load_state_dict(torch.load(model_file, map_location=device))
         print(f"Loaded model from {model_file}")
     else:
         raise FileNotFoundError(f"Model file {model_file} not found.")
