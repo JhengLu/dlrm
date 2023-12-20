@@ -437,6 +437,9 @@ def _train(
                         print(f"lr: {it} {i} {g['lr']:.6f}")
                 pipeline.progress(batched_iterator)
                 lr_scheduler.step()
+                it_save_path = f"model/it_{it}_model.pt"  # Modify path as needed
+                torch.save(pipeline._model.state_dict(), it_save_path)
+                print(f"Model saved for it {it} at {it_save_path}")
                 if is_rank_zero:
                     pbar.update(1)
             except StopIteration:
