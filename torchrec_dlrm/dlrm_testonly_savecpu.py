@@ -141,6 +141,12 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
              " in each embedding table. 26 values are expected for the Criteo dataset.",
     )
     parser.add_argument(
+        "--model_name",
+        type=str,
+        default=None,
+        help="example: crkModel_cpu.pt",
+    )
+    parser.add_argument(
         "--dense_arch_layer_sizes",
         type=str,
         default="512,256,64",
@@ -496,12 +502,12 @@ def train_val_test(
         #val_auroc = _evaluate(args.limit_val_batches, pipeline, val_dataloader, "val")
         #results.val_aurocs.append(val_auroc)
 
-    test_auroc = _evaluate(args.limit_test_batches, pipeline, test_dataloader, "test")
-    results.test_auroc = test_auroc
+    # test_auroc = _evaluate(args.limit_test_batches, pipeline, test_dataloader, "test")
+    # results.test_auroc = test_auroc
 
     # Save the model after training and test
     if dist.get_rank() == 0:  # Check if it's the rank 0 process
-        save_path = "model/crkModel_cpu.pt"  # Update this path as needed
+        save_path = "model/" + args.model_name  # Update this path as needed
         torch.save(model.state_dict(), save_path)
         print(f"Model saved to {save_path}")
 
