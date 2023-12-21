@@ -651,11 +651,17 @@ def main(argv: List[str]) -> None:
         over_arch_layer_sizes=args.over_arch_layer_sizes,
         dense_device=device,
     )
+    print("dlrm_model")
+    print(dlrm_model)
 
 
     # Setup optimizer and lr_scheduler
     # ... [existing optimizer and lr_scheduler setup code]
     train_model = DLRMTrain(dlrm_model)
+
+    print("train_model")
+    print(train_model)
+
     embedding_optimizer = torch.optim.Adagrad if args.adagrad else torch.optim.SGD
     # This will apply the Adagrad optimizer in the backward pass for the embeddings (sparse_arch). This means that
     # the optimizer update will be applied in the backward pass, in this case through a fused op.
@@ -712,6 +718,8 @@ def main(argv: List[str]) -> None:
         device=device,
         plan=plan,
     )
+    print("model")
+    print(model)
     if rank == 0 and args.print_sharding_plan:
         for collectionkey, plans in model._plan.plan.items():
             print(collectionkey)
