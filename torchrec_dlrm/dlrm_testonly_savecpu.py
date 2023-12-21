@@ -390,6 +390,7 @@ def _train(
         validation_freq: Optional[int],
         limit_train_batches: Optional[int],
         limit_val_batches: Optional[int],
+        modelName: str,
 ) -> None:
     """
     Trains model for 1 epoch. Helper function for train_val_test.
@@ -437,7 +438,7 @@ def _train(
                         print(f"lr: {it} {i} {g['lr']:.6f}")
                 pipeline.progress(batched_iterator)
                 lr_scheduler.step()
-                it_save_path = f"model/it_{it}_model.pt"  # Modify path as needed
+                it_save_path = f"model/it_{it}_"+modelName  # Modify path as needed
                 torch.save(pipeline._model.state_dict(), it_save_path)
                 print(f"Model saved for it {it} at {it_save_path}")
                 if is_rank_zero:
@@ -501,6 +502,7 @@ def train_val_test(
             args.validation_freq_within_epoch,
             args.limit_train_batches,
             args.limit_val_batches,
+            args.model_name
         )
         #val_auroc = _evaluate(args.limit_val_batches, pipeline, val_dataloader, "val")
         #results.val_aurocs.append(val_auroc)
