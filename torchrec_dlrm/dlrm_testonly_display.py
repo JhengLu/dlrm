@@ -97,6 +97,12 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
         help="Drop the last non-full training batch",
     )
     parser.add_argument(
+        "--model_name",
+        type=str,
+        default=None,
+        help="example: crkModel_cpu.pt",
+    )
+    parser.add_argument(
         "--test_batch_size",
         type=int,
         default=None,
@@ -622,7 +628,7 @@ def main(argv: List[str]) -> None:
 
 
     # Load the pre-trained model
-    model_file = "model/crkModel_big.pt"  # Path to the pre-trained model
+    model_file = "model/" + args.model_name  # Path to the pre-trained model
     eb_configs = [
         EmbeddingBagConfig(
             name=f"t_{feature_name}",
