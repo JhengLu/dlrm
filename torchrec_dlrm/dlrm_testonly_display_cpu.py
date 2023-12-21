@@ -627,7 +627,7 @@ def main(argv: List[str]) -> None:
 
 
     # Load the pre-trained model
-    model_file = "model/crkModel_cpu.pt"  # Path to the pre-trained model
+    model_file = "model/"+args.model_name  # Path to the pre-trained model
     eb_configs = [
         EmbeddingBagConfig(
             name=f"t_{feature_name}",
