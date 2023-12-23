@@ -13,7 +13,7 @@ ENV TZ=America/Detroit
 
 # Download and install Anaconda with automatic "yes" response
 #RUN curl -O https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Linux-x86_64.sh && \
-    bash Anaconda3-2023.09-0-Linux-x86_64.sh -b -p /opt/anaconda3 -u $ANACONDA_ACCEPT_LICENSE
+# bash Anaconda3-2023.09-0-Linux-x86_64.sh -b -p /opt/anaconda3 -u $ANACONDA_ACCEPT_LICENSE
 
 # Add Conda binary directory to PATH
 #ENV PATH="/opt/anaconda3/bin:${PATH}"
