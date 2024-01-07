@@ -39,6 +39,8 @@ from torchrec.optim.apply_optimizer_in_backward import apply_optimizer_in_backwa
 from torchrec.optim.keyed import CombinedOptimizer, KeyedOptimizerWrapper
 from torchrec.optim.optimizers import in_backward_optimizer_filter
 from tqdm import tqdm
+from datetime import datetime
+
 
 # OSS import
 try:
@@ -362,6 +364,8 @@ def _evaluate(
                 auroc(preds, labels)
                 if is_rank_zero:
                     pbar.update(1)
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"Current Time: {current_time}")
             except StopIteration:
                 break
 
